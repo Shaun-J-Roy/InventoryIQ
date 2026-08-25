@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import sys
 import re
 
@@ -14,10 +12,13 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QComboBox,
     QMessageBox,
+    QTextEdit,
     QVBoxLayout,
     QFormLayout,
     QHBoxLayout
 )
+
+from api import fetch_products, process_products
 
 
 # Abstract parent class
@@ -84,8 +85,8 @@ class InventoryIQ(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("InventoryIQ")
-        self.resize(700, 600)
-        self.setMinimumSize(600, 500)
+        self.resize(700, 700)
+        self.setMinimumSize(600, 600)
 
         self.create_ui()
         self.connect_signals()
@@ -101,7 +102,7 @@ class InventoryIQ(QMainWindow):
         # Main layout
         main_layout = QVBoxLayout(central_widget)
         main_layout.setContentsMargins(40, 30, 40, 30)
-        main_layout.setSpacing(15)
+        main_layout.setSpacing(12)
 
         # Title
         title = QLabel("InventoryIQ")
@@ -115,9 +116,9 @@ class InventoryIQ(QMainWindow):
 
         # Product form
         form_layout = QFormLayout()
-        form_layout.setContentsMargins(0, 15, 0, 10)
+        form_layout.setContentsMargins(0, 15, 0, 5)
         form_layout.setHorizontalSpacing(18)
-        form_layout.setVerticalSpacing(12)
+        form_layout.setVerticalSpacing(10)
 
         self.product_id = QLineEdit()
         self.product_name = QLineEdit()
@@ -163,7 +164,7 @@ class InventoryIQ(QMainWindow):
 
         main_layout.addLayout(form_layout)
 
-        # Buttons
+        # Main buttons
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
 
@@ -177,15 +178,48 @@ class InventoryIQ(QMainWindow):
 
         main_layout.addLayout(button_layout)
 
-        main_layout.addStretch()
+        # API section
+        api_title = QLabel("External Product Data")
+        api_title.setObjectName("apiTitle")
+
+        api_description = QLabel(
+            "Fetch product information from a public API."
+        )
+        api_description.setObjectName("apiDescription")
+
+        self.api_button = QPushButton("Fetch Products")
+
+        self.api_output = QTextEdit()
+        self.api_output.setReadOnly(True)
+        self.api_output.setPlaceholderText(
+            "API results will appear here..."
+        )
+
+        main_layout.addSpacing(10)
+        main_layout.addWidget(api_title)
+        main_layout.addWidget(api_description)
+        main_layout.addWidget(self.api_button)
+        main_layout.addWidget(self.api_output)
 
 
     # Connect buttons to functions
     def connect_signals(self):
 
-        self.submit_button.clicked.connect(self.submit)
-        self.clear_button.clicked.connect(self.clear)
-        self.exit_button.clicked.connect(self.confirm_exit)
+        self.submit_button.clicked.connect(
+            self.submit
+        )
+
+        self.clear_button.clicked.connect(
+            self.clear
+        )
+
+        self.exit_button.clicked.connect(
+            self.confirm_exit
+        )
+
+        self.api_button.clicked.connect(
+            self.load_api_data
+        )
 
 
     # Validate and process input
@@ -201,23 +235,39 @@ class InventoryIQ(QMainWindow):
 
             # Check empty fields
             if not product_id:
-                raise ValueError("Product ID cannot be empty.")
+                raise ValueError(
+                    "Product ID cannot be empty."
+                )
 
             if not product_name:
-                raise ValueError("Product Name cannot be empty.")
+                raise ValueError(
+                    "Product Name cannot be empty."
+                )
 
             if not stock_text:
-                raise ValueError("Stock Quantity cannot be empty.")
+                raise ValueError(
+                    "Stock Quantity cannot be empty."
+                )
 
             if not sales_text:
-                raise ValueError("Monthly Sales cannot be empty.")
+                raise ValueError(
+                    "Monthly Sales cannot be empty."
+                )
 
             # Validate product ID
-            if not re.fullmatch(r"P\\d+", product_id):
-                raise ValueError("Product ID must be like P101.")
+            if not re.fullmatch(
+                r"P\d+",
+                product_id
+            ):
+                raise ValueError(
+                    "Product ID must be like P101."
+                )
 
             # Validate product name
-            if not re.fullmatch(r"[A-Za-z ]+", product_name):
+            if not re.fullmatch(
+                r"[A-Za-z ]+",
+                product_name
+            ):
                 raise ValueError(
                     "Product Name should contain only letters."
                 )
@@ -239,13 +289,16 @@ class InventoryIQ(QMainWindow):
 
             # Create the correct object
             if item_type == "Dead Stock":
+
                 item = DeadStockItem(
                     product_id,
                     product_name,
                     stock,
                     sales
                 )
+
             else:
+
                 item = FastMovingItem(
                     product_id,
                     product_name,
@@ -260,11 +313,11 @@ class InventoryIQ(QMainWindow):
             QMessageBox.information(
                 self,
                 "Validation Successful",
-                f"Product ID: {product_id}\\n"
-                f"Product Name: {product_name}\\n"
-                f"Stock Quantity: {stock}\\n"
-                f"Monthly Sales: {sales}\\n"
-                f"Item Type: {item_type}\\n"
+                f"Product ID: {product_id}\n"
+                f"Product Name: {product_name}\n"
+                f"Stock Quantity: {stock}\n"
+                f"Monthly Sales: {sales}\n"
+                f"Item Type: {item_type}\n"
                 f"Score: {score:.2f}"
             )
 
@@ -281,7 +334,7 @@ class InventoryIQ(QMainWindow):
             QMessageBox.critical(
                 self,
                 "Error",
-                f"An unexpected error occurred:\\n{error}"
+                f"An unexpected error occurred:\n{error}"
             )
 
 
@@ -294,6 +347,7 @@ class InventoryIQ(QMainWindow):
         self.monthly_sales.clear()
 
         self.item_type.setCurrentIndex(0)
+
         self.product_id.setFocus()
 
 
@@ -312,10 +366,43 @@ class InventoryIQ(QMainWindow):
             self.close()
 
 
+    # Fetch and display API data
+    def load_api_data(self):
+
+        self.api_output.setPlainText(
+            "Fetching product data..."
+        )
+
+        products = fetch_products()
+
+        if not products:
+
+            QMessageBox.warning(
+                self,
+                "API Error",
+                "Unable to fetch product data."
+            )
+
+            self.api_output.clear()
+
+            return
+
+        result = process_products(products)
+
+        self.api_output.setPlainText(result)
+
+        QMessageBox.information(
+            self,
+            "Success",
+            "Product data fetched successfully."
+        )
+
+
     # Apply application styling
     def apply_style(self):
 
         self.setStyleSheet("""
+
             QMainWindow {
                 background-color: #121212;
             }
@@ -334,6 +421,17 @@ class InventoryIQ(QMainWindow):
             #subtitle {
                 color: #999999;
                 font-size: 15px;
+            }
+
+            #apiTitle {
+                color: #7C6CFF;
+                font-size: 18px;
+                font-weight: bold;
+            }
+
+            #apiDescription {
+                color: #888888;
+                font-size: 13px;
             }
 
             QFormLayout QLabel {
@@ -387,6 +485,8 @@ class InventoryIQ(QMainWindow):
                 padding: 5px;
             }
 
+            /* Main buttons */
+
             QPushButton {
                 background-color: #5B4BFF;
                 color: #FFFFFF;
@@ -404,6 +504,41 @@ class InventoryIQ(QMainWindow):
             QPushButton:pressed {
                 background-color: #4939E8;
             }
+
+            /* Message box buttons */
+
+            QMessageBox QPushButton {
+                background-color: #5B4BFF;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 7px;
+                min-width: 70px;
+                min-height: 36px;
+                padding: 6px 16px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+
+            QMessageBox QPushButton:hover {
+                background-color: #6C5CFF;
+            }
+
+            QMessageBox QPushButton:pressed {
+                background-color: #4939E8;
+            }
+
+            /* API output */
+
+            QTextEdit {
+                background-color: #1E1E1E;
+                color: #EAEAEA;
+                border: 1px solid #383838;
+                border-radius: 7px;
+                padding: 10px;
+                font-family: Consolas;
+                font-size: 13px;
+            }
+
         """)
 
 
@@ -411,10 +546,7 @@ class InventoryIQ(QMainWindow):
 app = QApplication(sys.argv)
 
 window = InventoryIQ()
+
 window.show()
 
 sys.exit(app.exec())
-
-out = Path("/mnt/data/inventoryiq_fixed.py")
-out.write_text(fixed_code, encoding="utf-8")
-print(f"Fixed file created: {out}")
