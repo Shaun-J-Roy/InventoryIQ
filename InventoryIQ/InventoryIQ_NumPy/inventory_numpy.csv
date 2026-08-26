@@ -1,0 +1,21 @@
+Product_ID,Product_Name,Category,Stock,Monthly_Sales,Price
+P101,Nike Shoes,Footwear,120,15,4500
+P102,Adidas T-Shirt,Clothing,200,80,1800
+P103,Sony Headphones,Electronics,75,45,6500
+P104,Apple Watch,Electronics,50,35,28000
+P105,Levis Jeans,Clothing,150,40,3500
+P106,Puma Backpack,Accessories,90,20,2500
+P107,Samsung Monitor,Electronics,60,30,15000
+P108,Adidas Cap,Accessories,180,25,1200
+P109,Converse Sneakers,Footwear,100,55,4200
+P110,North Face Jacket,Clothing,80,18,8500
+P111,Logitech Mouse,Electronics,140,65,1800
+P112,HP Keyboard,Electronics,110,50,2200
+P113,Puma Shoes,Footwear,130,70,3800
+P114,RayBan Sunglasses,Accessories,60,22,9500
+P115,Zara Hoodie,Clothing,170,75,2800
+P116,Canon Camera,Electronics,45,20,42000
+P117,Reebok Shorts,Clothing,125,48,2100
+P118,Wildcraft Bag,Accessories,95,32,3200
+P119,Asics Running Shoes,Footwear,85,60,5200
+P120,Decathlon Jacket,Clothing,105,28,4500
